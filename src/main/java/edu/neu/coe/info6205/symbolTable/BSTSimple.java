@@ -1,7 +1,6 @@
 package edu.neu.coe.info6205.symbolTable;
 
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiFunction;
 
 public class BSTSimple<Key extends Comparable<Key>, Value> implements BSTdetail<Key, Value> {
@@ -35,12 +34,8 @@ public class BSTSimple<Key extends Comparable<Key>, Value> implements BSTdetail<
     public Value put(Key key, Value value) {
         NodeValue nodeValue = put(root, key, value);
         if (root == null) root = nodeValue.node;
-        if (nodeValue.value==null) root.count++;
+        if (nodeValue.value == null) root.count++;
         return nodeValue.value;
-    }
-
-    public void delete(Key key) {
-        root = delete(root, key);
     }
 
     @Override
@@ -62,10 +57,11 @@ public class BSTSimple<Key extends Comparable<Key>, Value> implements BSTdetail<
     }
 
     Node root = null;
-    
+
     @Override
     public void delete(Key key) {
         // TODO- Implement this delete method or add your variations of delete.
+        root = delete(root, key);
     }
 
     private Value get(Node node, Key key) {
@@ -98,7 +94,7 @@ public class BSTSimple<Key extends Comparable<Key>, Value> implements BSTdetail<
             NodeValue result = put(node.smaller, key, value);
             if (node.smaller == null)
                 node.smaller = result.node;
-            if (result.value==null)
+            if (result.value == null)
                 result.node.count++;
             return result;
         } else {
@@ -106,7 +102,7 @@ public class BSTSimple<Key extends Comparable<Key>, Value> implements BSTdetail<
             NodeValue result = put(node.larger, key, value);
             if (node.larger == null)
                 node.larger = result.node;
-            if (result.value==null)
+            if (result.value == null)
                 result.node.count++;
             return result;
         }
@@ -150,17 +146,18 @@ public class BSTSimple<Key extends Comparable<Key>, Value> implements BSTdetail<
 
     /**
      * Do a generic traverse of the binary tree starting with node
-     * @param q determines when the function f is invoked ( lt 0: pre, ==0: in, gt 0: post)
+     *
+     * @param q    determines when the function f is invoked ( lt 0: pre, ==0: in, gt 0: post)
      * @param node the node
-     * @param f the function to be invoked
+     * @param f    the function to be invoked
      */
     private void doTraverse(int q, Node node, BiFunction<Key, Value, Void> f) {
         if (node == null) return;
-        if (q<0) f.apply(node.key, node.value);
+        if (q < 0) f.apply(node.key, node.value);
         doTraverse(q, node.smaller, f);
-        if (q==0) f.apply(node.key, node.value);
+        if (q == 0) f.apply(node.key, node.value);
         doTraverse(q, node.larger, f);
-        if (q>0) f.apply(node.key, node.value);
+        if (q > 0) f.apply(node.key, node.value);
     }
 
     private class NodeValue {
@@ -189,12 +186,13 @@ public class BSTSimple<Key extends Comparable<Key>, Value> implements BSTdetail<
         Node smaller = null;
         Node larger = null;
         int count = 0;
+        int length;
 
         @Override
         public String toString() {
             StringBuilder sb = new StringBuilder("Node: " + key + ":" + value);
-            if (smaller != null) sb.append(", smaller: " + smaller.key);
-            if (larger != null) sb.append(", larger: " + larger.key);
+            if (smaller != null) sb.append(", smaller: ").append(smaller.key);
+            if (larger != null) sb.append(", larger: ").append(larger.key);
             return sb.toString();
         }
 
@@ -209,12 +207,13 @@ public class BSTSimple<Key extends Comparable<Key>, Value> implements BSTdetail<
     }
 
     private void setRoot(Node node) {
-        if(root==null){
+        if (root == null) {
             root = node;
             root.count++;
-        }else
+        } else
             root = node;
     }
+
     private void show(Node node, StringBuffer sb, int indent) {
         if (node == null) return;
         for (int i = 0; i < indent; i++) sb.append("  ");
@@ -238,5 +237,75 @@ public class BSTSimple<Key extends Comparable<Key>, Value> implements BSTdetail<
         StringBuffer sb = new StringBuffer();
         show(root, sb, 0);
         return sb.toString();
+    }
+
+    private int maxLenght(Node node) {
+        if (node != null) {
+            return Math.max(maxLenght(node.smaller), maxLenght(node.larger)) + 1;
+        }
+        return 0;
+    }
+
+    private int averageLength() {
+        if (root == null) return 0;
+        int sum = 0;
+        int num = 0;
+        Queue<Node> Queue = new LinkedList<Node>();
+        Queue.offer(root);
+        while (!Queue.isEmpty()) {
+            Node node = Queue.poll();
+            if (node.smaller == null && node.larger == null) {
+                sum += node.length;
+                num += 1;
+            }
+            if (node.smaller != null) {
+                node.smaller.length = node.length + 1;
+                Queue.offer(node.smaller);
+            }
+            if (node.larger != null) {
+                node.larger.length = node.length + 1;
+                Queue.offer(node.larger);
+            }
+        }
+        return sum / num;
+    }
+
+    private static double Height(int N, String q) {
+        BSTSimple<Integer, Integer> b = new BSTSimple<Integer, Integer>();
+        Random random = new Random();
+        int X = 1000;
+        while (b.size() != N) {
+            b.put(random.nextInt(2 * N), 1);
+        }
+
+        for (int i = 1; i< X * 2;i++){
+            int dnum = 0;
+            int inum = 0;
+            boolean type = random.nextBoolean();
+            int key = random.nextInt( N * N);
+            if (type && inum < X || !type && dnum >= X){
+                b.put(key,1);
+                inum++;
+            }else{
+                b.delete(key);
+                dnum++;
+            }
+        }
+
+        if (q.equals("average")) return b.averageLength();
+        else return b.maxLenght(b.getRoot());
+    }
+
+    public static void main(String[] args) {
+        System.out.println("N\tAverage\tMax\tN^1/2\tlgN");
+
+        for(int N = 100; N<=10000; N+=100) {
+            double square = Math.sqrt(N);
+            double lgN = Math.log(N) / Math.log(2);
+            double averageHeight = Height(N, "average");
+            double maxHeight = Height(N, "max");
+            System.out.printf("%d\t%.4f\t%.4f\t%.4f\t%.4f\n", N, averageHeight, maxHeight, square, lgN);
+        }
+
     }
 }
